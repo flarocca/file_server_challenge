@@ -23,12 +23,13 @@ fn init_tracing() {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
     init_tracing();
 
     let commands = get_commands();
 
     let mut clap_commands = clap::Command::new("file-server-client")
-        .version("0.1.0")
+        .version("1.0.0")
         .subcommand_required(true)
         .arg_required_else_help(true);
 

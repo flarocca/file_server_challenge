@@ -1,5 +1,7 @@
 // This design for commands allows for extensibility and easy addition of new commands in the
 // future. This is a custom implementation I had already written in the past ([see here](https://github.com/flarocca/rust_revm_simulations/blob/main/src/commands/mod.rs))
+// It could be argued that using the typed version of commands would be better, but I think it is
+// less flexible and more coupled.
 mod helpers;
 mod list_upload_ids;
 mod upload_files;

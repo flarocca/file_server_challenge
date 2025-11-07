@@ -1,6 +1,7 @@
 use axum::Router;
 use file_server_server::{
-    handlers, infrastructure::AuthenticationExtensions, server::ServerState, services::FileService,
+    handlers::RouteExtensions, infrastructure::AuthenticationExtensions, server::ServerState,
+    services::FileService,
 };
 use std::sync::Arc;
 use tokio::{net::TcpListener, task::JoinHandle};
@@ -41,14 +42,10 @@ impl WebServerSimulator {
             Arc::new(self.file_service) as FileServiceType
         ));
 
-        let routes = handlers::router(state.clone());
-
         // For testing purposes, I am taking the router only, which skips some additions
         // like OpenAPI docs, tracing, etc. Depending on the project, that might o r might not be
         // desired. For that reason I need to add authentication manually here.
-        let server = Router::new()
-            .nest("/api/v1", routes.into())
-            .with_authentication();
+        let server = Router::new().with_routes(state).with_authentication();
         let server = axum::serve(self.listener, server.into_make_service());
 
         tokio::spawn(async move {

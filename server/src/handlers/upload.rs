@@ -38,10 +38,14 @@ use uuid::Uuid;
 #[instrument(skip(state, metadata, body), fields(id = %id))]
 pub async fn upload(
     State(state): State<Arc<ServerState>>,
+    // TODO: Add `validate-rs` crate for better error hanbdling and input validation
     Query(metadata): Query<UploadMetadataRequest>,
     Path(id): Path<Uuid>,
     body: Bytes,
 ) -> Result<impl IntoResponse, ServerError> {
+    // Since each handler (or controller) is responsible for the presentation logic,
+    // Once basic input validations were copleted, we delegate the business logic to the service
+    // layer. Normnally, the underlying service must expose one method per handler.
     let encoded_hash = state
         .file_service()
         .upload_file(id, metadata.clone().into(), body)

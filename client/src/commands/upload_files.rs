@@ -89,7 +89,7 @@ impl UploadFilesCommand {
         file_manager: FileManager,
         api_client: ApiClient,
     ) -> anyhow::Result<()> {
-        let file_entries = file_manager.load_files()?;
+        let file_entries = file_manager.load_files().await?;
         if file_entries.is_empty() {
             anyhow::bail!("directory has no files");
         }
@@ -120,8 +120,8 @@ impl UploadFilesCommand {
             );
         }
 
-        file_manager.write_root_file(id, &root_hex)?;
-        file_manager.cleanup_files(file_entries)?;
+        file_manager.write_root_file(id, &root_hex).await?;
+        file_manager.cleanup_files(file_entries).await?;
 
         println!("upload complete. id={}, root={}", id, root_hex);
 
@@ -132,6 +132,9 @@ impl UploadFilesCommand {
 #[async_trait]
 impl Command for UploadFilesCommand {
     fn create(&self) -> clap::Command {
+        // TODO: These set of command arguments are mostly common to all commands.
+        // A very nice to have would be an abstraction that allows each command
+        // to declare only the ones that exclusive for the command in question
         clap::Command::new("upload-files")
             .about("This command initiates, uploads and completes an upload flow.")
             .long_flag("upload-files")

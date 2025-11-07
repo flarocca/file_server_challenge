@@ -1,6 +1,8 @@
-use std::time::Duration;
-
+// This functionality was prompted to ChatGPT and then refactored accordingly.
+// I asked ChatGPT to use `tokio-retry` because I used in the past, but there might be
+// better alternatives.
 use reqwest::{RequestBuilder, Response, StatusCode};
+use std::time::Duration;
 use tokio_retry::{
     Retry,
     strategy::{ExponentialBackoff, jitter},

@@ -1,9 +1,8 @@
-use std::path::PathBuf;
-
 use async_trait::async_trait;
 use clap::{Arg, ArgAction, ArgMatches, value_parser};
 use file_server_library::{CustomMerkleTree, models::Hash32};
 use reqwest::Url;
+use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::{
@@ -102,7 +101,7 @@ impl VerifyFileCommand {
         file_manager: FileManager,
         args: VerifyFilesCommandArgs,
     ) -> anyhow::Result<()> {
-        let root_hex = file_manager.load_root_file(args.id)?;
+        let root_hex = file_manager.load_root_file(args.id).await?;
         let root = Hash32::from_hex(&root_hex).map_err(|e| anyhow::anyhow!(e))?;
 
         let file_bytes = api_client.download_file(args.id, args.index).await?;

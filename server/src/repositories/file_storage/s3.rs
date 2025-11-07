@@ -21,7 +21,7 @@ impl S3Config {
             .build()
             .unwrap()
             .try_deserialize::<S3Config>()
-            .map_err(|e| anyhow::anyhow!("failed to load S# Configuration: {}", e))
+            .map_err(|e| anyhow::anyhow!("failed to load S3 Configuration: {}", e))
     }
 }
 
@@ -39,6 +39,7 @@ impl S3FileStorage {
     pub async fn load_from_env() -> anyhow::Result<Self> {
         let config = S3Config::load_from_env()?;
         let aws_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
+
         // ChatGPT trick: This next line here was added to make it work with localstack.
         let conf = Builder::from(&aws_config).force_path_style(true).build();
         let client = Client::from_conf(conf);

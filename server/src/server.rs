@@ -1,8 +1,9 @@
+use crate::handlers::RouteExtensions;
 use crate::infrastructure::{AuthenticationExtensions, TracingExtensions};
 use crate::services::FileService;
 use crate::{
     apidoc::ApiDoc,
-    handlers, repositories,
+    repositories,
     services::{self},
 };
 use axum::Router;
@@ -53,10 +54,9 @@ pub async fn init_server() -> anyhow::Result<(Router, TcpListener)> {
     let (file_repository, file_storage) = repositories::init_repositories().await?;
     let file_service = services::init_services(file_repository, file_storage).await?;
     let state = ServerState::new(file_service);
-    let server_routes = handlers::router(Arc::new(state.clone()));
 
     let (server, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .nest("/api/v1", server_routes)
+        .with_routes(Arc::new(state))
         .split_for_parts();
 
     let server = server

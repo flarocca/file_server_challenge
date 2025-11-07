@@ -1,17 +1,15 @@
-# Client
-- Retry
-
 # General challenge
 
 The most challenging aspect of this challenge is to, while akcnowledging ChatGPT and IA exists (and I use it), prove that I know what it is
-reflected in this challenge is code I wrote (either directly or indirectly) and understand completely. So I really oriented the whole solution around
+reflected in this challenge, it is code I wrote (either directly or indirectly) and I understand completely. So I really oriented the whole solution around
 being explicit where I use it and why. In any case, I should be able to explain every single line of code in this repository as if IA did not exist.
 I started off from 4 premises:
 
 1. IA assistance is a fact, so pretending I didn't use it is pointless. What I find challenging here is how to prove I leveraged IA as opposed
-   to just delegate the solution to it (like It used to be with StackOverflow a few years ago).
+   to just delegate the solution to it (like Stackoverflow used to be a few years ago).
 2. Engineers reviewing this code already discounted IA is going to be used. The challenge consists in finding a balance that make reviewers feel
-   comfortable with how I leveraged IA.
+   comfortable with how I leveraged IA. I do practice regularly, so luckily for me I have many examples (either in Rust or C#) already in my Github. I'll try to
+   reference to existing code as much as possible.
 3. I love coding, so even if I use IA, I still enjoy coding myself, and most importantly, the learnings. I still need to keep a reasonable balance
    between how much I code and how much code does not make any sense to waste time writing.
 4. I am scared of IA because of the cognitive damage it can cause delegating the problem solving to it. So I take coding challenges as an opportunity
@@ -25,16 +23,17 @@ Once completed, I asked ChatGPT for a review. I took some suggestions but just t
 
 ## Pending Task & Improvements
 
-- Feature flag for tracing
+- Feature for tracing
+- Support for different hash algorithms
 
 # Server
 
-For the server I used a template I built myself at my current job. Since we run some microservices, there is a template repository we use to quickly set up everything.
-The original template also includes a crafted bash script that modifies some common properties such as service name, github actions pipelines, helm charts, etc. I didn't include that scrtipt here.
-So I leveraged the Server harness I already built in the past to focus on the logic specific needed for the client to work.
+For the server I used a template I built myself at my current job. Since we run microservices, there is a template repository we use to quickly set up everything.
+The original template also includes a crafted bash script that modifies some common properties such as service name, github actions pipelines, helm charts, etc.
+I didn't include that scrtipt here. So I leveraged the Server harness I already built in the past to focus on the logic specific needed for the client to work.
 
-I have a strong bias towards how to structure projects so that layers are properly decoupled from each other due to my past on .Net and C# (and I find it very useful in Rust as well).
-You can have a look at this old [C# API Template](https://github.com/flarocca/tmenos3.netcore.apidemo)
+I have a strong bias towards how to structure projects so that layers are properly decoupled from each other due to my past on .Net and C# (and I find it very useful
+in Rust as well). You can have a look at this old [C# API Template](https://github.com/flarocca/tmenos3.netcore.apidemo)
 
 The project structure is as follows:
 - `handlers`: this is the most external layer (presentation layer). It is responsible for validating input and formatting output.
@@ -48,7 +47,7 @@ The project structure is as follows:
 
 The expected flow should always be: `handler -> service -> repository`.
 
-As the challenge is described right now, only one client with one set of files could be added.
+One more consideration is that as the challenge is described right now, only one client with one set of files could be added.
 I decided to include the concept of Upload ID so that a client can create groups of files to upload.
 I imagine this as it would be a sort of torrent system or similar. Additionally, by adding the Upload ID, it is possible to have multiple clients
 without modifying (at least not too agressively) the current Server API.
@@ -62,7 +61,7 @@ When the client wants to download and verify files, it must include the Upload I
 
 ## Authentication
 
-When a client is added to the server, a new API-KEY and API-SECRET are generated.
+When a client is added to the server, a new API-KEY and API-SECRET are generated. This feature is not implemented, but I designed the server in that direction.
 The client uses the API-SECRET to sign every request with HMAC-SHA256.
 
 The server authenticates every request by reading 3 headers:
@@ -70,15 +69,18 @@ The server authenticates every request by reading 3 headers:
 - `X-AUTH-SIGNATURE`: the HMAC-SHA256 signature of the request, signed with the API-SECRET
 - `X-AUTH-KEY`: the API-KEY assigned to the client
 
-Right now, the client must sign the timestamp only, in a real production scenario, the client should sign the timestamp along with the request (path, query and body)
-Including the timestamp not only prevents replay attacks but also works as a TTL mechanism.
+Right now, the client must sign the timestamp only and not the whole request, in a real production scenario, the client should sign the timestamp along
+with the rest request (path, query and body)
+The timestamp is a clever feature that not only prevents replay attacks but also works as a TTL mechanism (statelessly, which is very convenient).
 
 I took this approach from Binance Futures API ([API Docs](https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info#signed-endpoint-examples-for-post-fapiv1order---hmac-keys)) and Talos API (their documentation is private)
 
 ## Database
 
-The server can use the custom In-Memory repository I implemented (nothing too fancy nor performant) or a Clickhouse database.
+The server can use a custom In-Memory repository I implemented (nothing too fancy nor performant) or a Clickhouse database.
 I chose Clickhouse cause it is what we are mostly using at my current company, so I already had some boilerplate ready to use.
+Additinally, Clickhouse allows me to showcase examples of transformations needed between domain models and persistance models, and how
+the current architecture decouples layers and implementation details.
 
 ## Storage
 
@@ -87,11 +89,14 @@ Again, S3 is something I already had boilerplate for at my current company.
 
 ## Running the Server
 
-it can be run isolated using one of the following alternatives:
+It can be run isolated using one of the following alternatives:
 
-1. `cargo run --bin server`
+1. `cargo run --bin file_server_server`
 2. `cd server && cargo run`
-3. `docker-compose -p server up --build`
+
+Or using `docker-compose`:
+
+1. `docker-compose -p server up --build`
 
 The server is exposed at `http://localhost:8080` if using the default configuration.
 OpenAPI documentation is available at `http://localhost:8080/apidoc/openapi.json`.
@@ -106,12 +111,14 @@ Additionally, there are two `docker-compose` perofiles:
 
 The server is stateless if feature `persistent` is enabled. This allows to deploy multiple instances behind a load balancer or ingress controller.
 
-## Pending tasks
+## Pending Task & Improvements
 
-- Add health endpoints
+- The authentication mechanism is not reflected in Swagger.
+- Add health/probe endpoints (`healthy`, `ready` and `started`) for readiness and liveness probes.
 - Server signatures: so far the client can verify files have not been tampered once upload to the server, but there is no mechanism for the client to verify
   the server is legit. To support that feature I would include server signatures in the all responses along with a registry of server public keys.
   Finally, the client can validate server signatures using the server public key from the registry.
+- ORM for Clickhouse
 
 # Client
 

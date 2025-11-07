@@ -1,11 +1,16 @@
-use std::collections::HashMap;
-
+// I chose Clickhouse cause it is what I've been using recently and I have already boilerplate for
+// it, otherwise I would have chosen something simpler or more popular (PostgreSQL, MongoDB, etc).
+// In fact, there is a great ORM for PostgreSQL (Diesel) that would make this code much simpler and
+// maintainable (migrations can be painful without a framework, sdk or crate).
+// Having SQL queries in code as it is right now is less than ideal, so I very desirable todo would
+// be to try a custom implementation.
 use async_trait::async_trait;
 use chrono::Utc;
 use clickhouse::{Client, Row};
 use config::Config;
 use file_server_library::models::Hash32;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::repositories::{FileMerkleTreeRow, FileRepository};
@@ -55,8 +60,12 @@ impl ClickhouseFileRepository {
     }
 }
 
+// This DTO is required to handle HashMaps, which are not supported natively by Clickhouse crate.
+// Additionally, it is a great example of why it is important to keep a clear separation between
+// the database layer and the service layer. That separation is achieved by not sharing same
+// structs between layers.
 #[derive(Serialize, Deserialize, Row)]
-struct ChFileRow {
+struct ClickhouseFileRow {
     #[serde(with = "clickhouse::serde::uuid")]
     id: Uuid,
     files_order: Vec<String>,
@@ -66,7 +75,7 @@ struct ChFileRow {
 }
 
 // ChatGPT snippet
-impl From<FileMerkleTreeRow> for ChFileRow {
+impl From<FileMerkleTreeRow> for ClickhouseFileRow {
     fn from(x: FileMerkleTreeRow) -> Self {
         let files = x.files.into_iter().map(|(k, v)| (k, v.to_hex())).collect();
         let leaf_hashes = x.leaf_hashes.into_iter().map(|h| h.to_hex()).collect();
@@ -82,10 +91,10 @@ impl From<FileMerkleTreeRow> for ChFileRow {
 }
 
 // ChatGPT snippet
-impl TryFrom<ChFileRow> for FileMerkleTreeRow {
+impl TryFrom<ClickhouseFileRow> for FileMerkleTreeRow {
     type Error = anyhow::Error;
 
-    fn try_from(row: ChFileRow) -> anyhow::Result<Self> {
+    fn try_from(row: ClickhouseFileRow) -> anyhow::Result<Self> {
         let files: HashMap<_, _> = row
             .files
             .into_iter()
@@ -130,7 +139,11 @@ impl FileRepository for ClickhouseFileRepository {
                FROM {FILE_TABLE_NAME}
               WHERE id = ?",
         );
-        let mut cursor = self.client.query(&sql).bind(id).fetch::<ChFileRow>()?;
+        let mut cursor = self
+            .client
+            .query(&sql)
+            .bind(id)
+            .fetch::<ClickhouseFileRow>()?;
 
         if let Some(row) = cursor.next().await? {
             Ok(Some(row.try_into()?))
@@ -145,7 +158,7 @@ impl FileRepository for ClickhouseFileRepository {
             .client
             .clone()
             .with_option("mutations_sync", "1")
-            .insert::<ChFileRow>(FILE_TABLE_NAME)
+            .insert::<ClickhouseFileRow>(FILE_TABLE_NAME)
             .await?;
 
         insert.write(&tree.into()).await?;
@@ -156,7 +169,7 @@ impl FileRepository for ClickhouseFileRepository {
 
     async fn update(&self, row: FileMerkleTreeRow) -> anyhow::Result<()> {
         // TODO: validate there is a row for this id
-        let item: ChFileRow = row.into();
+        let item: ClickhouseFileRow = row.into();
 
         let sql = format!(
             "ALTER TABLE {FILE_TABLE_NAME} UPDATE

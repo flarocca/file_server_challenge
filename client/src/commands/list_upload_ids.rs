@@ -46,7 +46,7 @@ pub struct ListUploadIdsCommand;
 
 impl ListUploadIdsCommand {
     async fn list_upload_ids(&self, file_manager: FileManager) -> anyhow::Result<()> {
-        let upload_ids = file_manager.list_root_files()?;
+        let upload_ids = file_manager.list_root_files().await?;
 
         if upload_ids.is_empty() {
             println!("No upload IDs found.");

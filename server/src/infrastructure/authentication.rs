@@ -60,7 +60,6 @@ async fn authentication_middleware(
     req: Request<Body>,
     next: Next,
 ) -> Response {
-    println!("Authentication middleware invoked");
     let Some(ts_header) = req.headers().get(AUTH_TS_HEADER_NAME) else {
         return (StatusCode::UNAUTHORIZED, "Missing X-AUTH-TS").into_response();
     };

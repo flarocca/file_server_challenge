@@ -1234,6 +1234,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "clap",
+ "dotenv",
  "file_server_library",
  "hex",
  "hmac",
