@@ -1,0 +1,10 @@
+[package]
+name = "file_server_library"
+authors = ["Facundo La Rocca <facu.larocca@gmail.com>"]
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+sha2 = "0.10.9"
+hex = "0.4.3"
+serde = { version = "1.0.228", features = ["derive"] }

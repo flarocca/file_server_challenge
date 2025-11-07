@@ -1,0 +1,65 @@
+services:
+  clickhouse:
+    profiles:
+      - server
+      - infra
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse-local
+    ports: 
+      - "8123:8123"
+      - "9000:9000"
+    env_file:
+      - .clickhouse.env
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/clickhouse/init:/docker-entrypoint-initdb.d
+
+  tabix:
+    profiles:
+      - infra
+    container_name: "tabix"
+    image: spoonest/clickhouse-tabix-web-client
+    depends_on:
+      - clickhouse
+    ports:
+      - "8082:80"
+    env_file:
+      - .tabix.env
+
+  localstack:
+    profiles:
+      - server
+      - infra
+    image: localstack/localstack:latest
+    container_name: localstack
+    env_file:
+      - .localstack.env
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./docker/localstack/init:/etc/localstack/init/ready.d
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  server:
+    profiles:
+      - server
+    container_name: merkle-server
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+      args:
+        SERVER_FEATURES: "persistent"
+    depends_on:
+      - clickhouse
+      - localstack
+    env_file:
+      - .docker.env
+    ports:
+      - "8080:8080"
+
+volumes:
+  clickhouse_data:

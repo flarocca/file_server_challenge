@@ -1,0 +1,42 @@
+[package]
+name = "file_server_server"
+authors = ["Facundo La Rocca <facu.larocca@gmail.com>"]
+version = "1.0.0"
+edition = "2024"
+
+[features]
+in-memory = []
+persistent = ["dep:clickhouse", "dep:aws-sdk-s3"] 
+default = ["persistent"]
+
+[dependencies]
+anyhow = "1.0.100"
+tower-http = { version = "0.6.6", features = ["trace"] }
+axum = { version = "0.8.6", features = ["macros"] }
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "signal"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+bytes = "1.10.1"
+hex = "0.4.3"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json", "fmt"] }
+tracing-log = "0.2.0"
+dotenv = "0.15.0"
+config = "0.15.18"
+reqwest = { version = "0.12.24", features = ["json"] }
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+async-trait = "0.1.89"
+utoipa = { version = "5.4.0", features = ["uuid", "axum_extras"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa-axum = { version = "0.2.0" }
+chrono = { version = "0.4.42", features = ["serde", "clock" ] }
+hmac = "0.12.1"
+sha2 = "0.10.9"
+clickhouse = { version = "0.14", features = ["uuid"], optional = true }
+aws-sdk-s3 = { version = "1", features = ["rustls"], optional = true }
+aws-config = "1.8.10"
+
+file_server_library = { path = "../lib" }
+
+[dev-dependencies]
+mockall = "0.13.1"
